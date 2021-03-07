@@ -4,14 +4,17 @@ import (
 	"context"
 	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
-	oauth2_github "golang.org/x/oauth2/github"
 	"net/http"
 )
 
 type Github struct{}
 
 func (g *Github) Endpoint() oauth2.Endpoint {
-	return oauth2_github.Endpoint
+	return oauth2.Endpoint{
+		AuthURL:       "https://github.com/login/oauth/authorize",
+		DeviceAuthURL: "https://github.com/login/device/code",
+		TokenURL:      "https://github.com/login/oauth/access_token",
+	}
 }
 
 func (g *Github) Scopes() []string {

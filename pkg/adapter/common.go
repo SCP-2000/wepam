@@ -13,32 +13,27 @@ type Adapter interface {
 }
 
 type Config struct {
-	ClientID     string
-	ClientSecret string // required only on server side
-	RedirectURL  string
-	Adapter      Adapter
+	ClientID string
+	Adapter  Adapter
 }
 
-func (c *Config) UserID(ctx context.Context, code string) (string, error) {
-	oAuth2Config := &oauth2.Config{
-		ClientID:     c.ClientID,
-		ClientSecret: c.ClientSecret,
-		Endpoint:     c.Adapter.Endpoint(),
-		RedirectURL:  c.RedirectURL,
+func (c *Config) Auth(ctx context.Context, callback func(url string, code string) error) (string, error) {
+	cfg := &oauth2.Config{
+		ClientID: c.ClientID,
+		Endpoint: c.Adapter.Endpoint(),
+		Scopes:   c.Adapter.Scopes(),
 	}
-	token, err := oAuth2Config.Exchange(ctx, code)
+	auth, err := cfg.AuthDevice(ctx)
 	if err != nil {
 		return "", err
 	}
-	return c.Adapter.UserID(ctx, oAuth2Config.Client(ctx, token))
-}
-
-func (c *Config) AuthCodeURL(state string) string {
-	oAuth2Config := &oauth2.Config{
-		ClientID:    c.ClientID,
-		Endpoint:    c.Adapter.Endpoint(),
-		RedirectURL: c.RedirectURL,
-		Scopes:      c.Adapter.Scopes(),
+	err = callback(auth.VerificationURI, auth.UserCode)
+	if err != nil {
+		return "", err
 	}
-	return oAuth2Config.AuthCodeURL(state)
+	token, err := cfg.Poll(ctx, auth)
+	if err != nil {
+		return "", err
+	}
+	return c.Adapter.UserID(ctx, cfg.Client(ctx, token))
 }
