@@ -5,14 +5,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/SCP-2000/wepam/pkg/adapter"
+	"github.com/SCP-2000/wepam/pkg/oauth2"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/types"
 	"time"
 )
 
-func Auth(args []string, pam_items map[string]string, callback func(string) error) error {
+func Auth(args []string, pam_items map[string]string, challenges chan *oauth2.Challenge) error {
+	defer close(challenges)
+
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	p := flags.String("p", "/etc/wepam/policy.rego", "path to policy file")
 	err := flags.Parse(args)
@@ -40,15 +42,18 @@ func Auth(args []string, pam_items map[string]string, callback func(string) erro
 					return nil, err
 				}
 
-				config, err := adapter.New(provider, client_id)
+				challenge, err := oauth2.NewChallenge(ctx.Context, provider, client_id)
 				if err != nil {
 					return nil, err
 				}
 
-				// TODO: better UX
-				data, err := config.Auth(ctx.Context, func(url string, code string) error {
-					return callback(fmt.Sprintf("please go to %s and input %s", url, code))
-				})
+				select {
+				case challenges <- challenge:
+				case <-ctx.Context.Done():
+					return nil, context.Canceled
+				}
+
+				data, err := challenge.Resolve(ctx.Context)
 				if err != nil {
 					return nil, err
 				}

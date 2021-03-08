@@ -7,12 +7,12 @@ package main
 typedef const char ** cchar;
 char *get_user(pam_handle_t *pamh);
 char *get_item(pam_handle_t *pamh, int item_type);
-int prompt(pam_handle_t *pamh, const char *fmt);
-int error(pam_handle_t *pamh, const char *fmt);
+int prompt(pam_handle_t *pamh, int style, const char *fmt);
 */
 import "C"
 import (
 	"fmt"
+	"github.com/SCP-2000/wepam/pkg/oauth2"
 	"unsafe"
 )
 
@@ -24,6 +24,12 @@ func GoStringSlice(argc C.int, argv **C.char) []string {
 		strings[i] = C.GoString(orig[i])
 	}
 	return strings
+}
+
+func Prompt(pamh *C.pam_handle_t, style C.int, msg string) C.int {
+	cs := C.CString(msg)
+	defer C.free(unsafe.Pointer(cs))
+	return C.prompt(pamh, style, cs)
 }
 
 /* Authentication API's */
@@ -49,18 +55,22 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) 
 			items[k] = C.GoString(item)
 		}
 	}
-	err := Auth(GoStringSlice(argc, argv), items, func(s string) error {
-		ss := C.CString(s)
-		defer C.free(unsafe.Pointer(ss))
-		if C.prompt(pamh, ss) != C.PAM_SUCCESS {
-			return fmt.Errorf("failed to prompt user")
-		}
-		return nil
-	})
+
+	challenges := make(chan *oauth2.Challenge)
+	errors := make(chan error)
+	go func() {
+		errors <- Auth(GoStringSlice(argc, argv), items, challenges)
+	}()
+
+	for challenge := range challenges {
+		Prompt(pamh, C.PAM_PROMPT_ECHO_OFF, fmt.Sprintf("please visit %s and input %s",
+			challenge.DeviceAuth.VerificationURI,
+			challenge.DeviceAuth.UserCode))
+	}
+
+	err := <-errors
 	if err != nil {
-		es := C.CString(fmt.Sprintf("authentication failure: %s", err))
-		defer C.free(unsafe.Pointer(es))
-		C.error(pamh, es)
+		Prompt(pamh, C.PAM_ERROR_MSG, fmt.Sprintf("authentication failure: %s", err))
 		return C.PAM_AUTH_ERR
 	}
 	return C.PAM_SUCCESS

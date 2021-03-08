@@ -8,9 +8,9 @@ import (
 	"net/http"
 )
 
-type Github struct{}
+type githubAdapter struct{}
 
-func (g *Github) Endpoint() oauth2.Endpoint {
+func (g *githubAdapter) Endpoint() oauth2.Endpoint {
 	return oauth2.Endpoint{
 		AuthURL:       "https://github.com/login/oauth/authorize",
 		DeviceAuthURL: "https://github.com/login/device/code",
@@ -18,11 +18,11 @@ func (g *Github) Endpoint() oauth2.Endpoint {
 	}
 }
 
-func (g *Github) Scopes() []string {
+func (g *githubAdapter) Scopes() []string {
 	return []string{"read:user"}
 }
 
-func (g *Github) Data(ctx context.Context, client *http.Client) ([]byte, error) {
+func (g *githubAdapter) Data(ctx context.Context, client *http.Client) ([]byte, error) {
 	user, _, err := github.NewClient(client).Users.Get(ctx, "")
 	if err != nil {
 		return nil, err
