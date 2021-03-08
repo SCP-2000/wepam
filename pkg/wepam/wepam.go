@@ -6,10 +6,11 @@ package main
 typedef const char ** cchar;
 char *get_user(pam_handle_t *pamh);
 char *get_item(pam_handle_t *pamh, int item_type);
-void prompt(pam_handle_t *pamh, const char *fmt);
+int prompt(pam_handle_t *pamh, const char *fmt);
 */
 import "C"
 import (
+	"fmt"
 	"log"
 	"unsafe"
 )
@@ -48,10 +49,12 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) 
 		}
 	}
 	err := Auth(GoStringSlice(argc, argv), items, func(s string) error {
-		C.prompt(pamh, C.CString(s))
+		if C.prompt(pamh, C.CString(s)) != C.PAM_SUCCESS {
+			return fmt.Errorf("failed to prompt user")
+		}
 		return nil
 	})
-	if err != nil{
+	if err != nil {
 		log.Println(err)
 		return C.PAM_AUTH_ERR
 	}

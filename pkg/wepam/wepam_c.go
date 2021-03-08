@@ -19,8 +19,9 @@ char *get_item(pam_handle_t *pamh, int item_type) {
   return strdup((const char *) item);
 }
 
-void prompt(pam_handle_t *pamh, const char *fmt) {
-  pam_prompt(pamh, PAM_TEXT_INFO, NULL, "%s", fmt);
+int prompt(pam_handle_t *pamh, const char *fmt) {
+  char *resp;
+  return pam_prompt(pamh, PAM_PROMPT_ECHO_OFF, &resp, "%s", fmt);
 }
 */
 import "C"
