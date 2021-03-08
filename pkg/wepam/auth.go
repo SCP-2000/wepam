@@ -16,14 +16,15 @@ func Auth(args []string, pam_items map[string]string, challenges chan *oauth2.Ch
 	defer close(challenges)
 
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	p := flags.String("p", "/etc/wepam/policy.rego", "path to policy file")
+	policy := flags.String("p", "/etc/wepam/policy.rego", "path to policy file")
+	timeout := flag.Duration("t", time.Minute*3, "authentication timeout")
 	err := flags.Parse(args)
 	if err != nil {
 		return err
 	}
 
 	r := rego.New(
-		rego.Load([]string{*p}, nil),
+		rego.Load([]string{*policy}, nil),
 		rego.Input(map[string]interface{}{
 			"pam": pam_items,
 		}),
@@ -68,7 +69,7 @@ func Auth(args []string, pam_items map[string]string, challenges chan *oauth2.Ch
 		rego.Query("data.policy.allow"),
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute) // TODO: user configurable timeout
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
 	res, err := r.Eval(ctx)

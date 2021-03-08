@@ -20,7 +20,8 @@ char *get_item(pam_handle_t *pamh, int item_type) {
 }
 
 int prompt(pam_handle_t *pamh, int style, const char *fmt) {
-  return pam_prompt(pamh, style, NULL, "%s", fmt);
+  char *resp;
+  return pam_prompt(pamh, style, &resp, "%s", fmt);
 }
 */
 import "C"

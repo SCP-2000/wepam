@@ -13,6 +13,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/SCP-2000/wepam/pkg/oauth2"
+	"runtime"
 	"unsafe"
 )
 
@@ -35,6 +36,7 @@ func Prompt(pamh *C.pam_handle_t, style C.int, msg string) C.int {
 /* Authentication API's */
 //export pam_sm_authenticate
 func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) C.int {
+	runtime.LockOSThread()
 	user := C.get_user(pamh)
 	if user == nil {
 		return C.PAM_USER_UNKNOWN
@@ -63,7 +65,7 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) 
 	}()
 
 	for challenge := range challenges {
-		Prompt(pamh, C.PAM_PROMPT_ECHO_OFF, fmt.Sprintf("please visit %s and input %s",
+		Prompt(pamh, C.PAM_TEXT_INFO, fmt.Sprintf("please visit %s and input %s",
 			challenge.DeviceAuth.VerificationURI,
 			challenge.DeviceAuth.UserCode))
 	}
