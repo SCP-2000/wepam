@@ -3,15 +3,16 @@ package main
 /*
 #cgo LDFLAGS: -lpam -fPIC
 #include <security/pam_modules.h>
+#include <stdlib.h>
 typedef const char ** cchar;
 char *get_user(pam_handle_t *pamh);
 char *get_item(pam_handle_t *pamh, int item_type);
 int prompt(pam_handle_t *pamh, const char *fmt);
+int error(pam_handle_t *pamh, const char *fmt);
 */
 import "C"
 import (
 	"fmt"
-	"log"
 	"unsafe"
 )
 
@@ -49,13 +50,17 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) 
 		}
 	}
 	err := Auth(GoStringSlice(argc, argv), items, func(s string) error {
-		if C.prompt(pamh, C.CString(s)) != C.PAM_SUCCESS {
+		ss := C.CString(s)
+		defer C.free(unsafe.Pointer(ss))
+		if C.prompt(pamh, ss) != C.PAM_SUCCESS {
 			return fmt.Errorf("failed to prompt user")
 		}
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
+		es := C.CString(fmt.Sprintf("authentication failure: %s", err))
+		defer C.free(unsafe.Pointer(es))
+		C.error(pamh, es)
 		return C.PAM_AUTH_ERR
 	}
 	return C.PAM_SUCCESS
