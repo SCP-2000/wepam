@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -21,10 +22,14 @@ func (g *Github) Scopes() []string {
 	return []string{"read:user"}
 }
 
-func (g *Github) UserID(ctx context.Context, client *http.Client) (string, error) {
+func (g *Github) Data(ctx context.Context, client *http.Client) ([]byte, error) {
 	user, _, err := github.NewClient(client).Users.Get(ctx, "")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return user.GetLogin(), nil
+	encoded, err := json.Marshal(user)
+	if err != nil {
+		return nil, err
+	}
+	return encoded, nil
 }
