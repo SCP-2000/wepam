@@ -9,7 +9,7 @@
         let pkgs = import nixpkgs { inherit system; }; in
         {
           devShell = pkgs.mkShell {
-            buildInputs = with pkgs;[ gcc pam ];
+            buildInputs = with pkgs;[ gcc pam pamtester gnumake ];
           };
         });
 }
