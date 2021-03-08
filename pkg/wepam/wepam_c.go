@@ -20,7 +20,7 @@ char *get_item(pam_handle_t *pamh, int item_type) {
 }
 
 int prompt(pam_handle_t *pamh, const char *fmt) {
-  return pam_prompt(pamh, PAM_TEXT_INFO, NULL, "%s", fmt);
+  return pam_prompt(pamh, PAM_PROMPT_ECHO_OFF, NULL, "%s", fmt);
 }
 
 int error(pam_handle_t *pamh, const char *fmt) {
