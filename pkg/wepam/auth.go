@@ -47,7 +47,7 @@ func Auth(args []string, pam_items map[string]string, callback func(string) erro
 
 				// TODO: better UX
 				data, err := config.Auth(ctx.Context, func(url string, code string) error {
-					return callback(fmt.Sprintf("please go to %s and input %s\n", url, code))
+					return callback(fmt.Sprintf("please go to %s and input %s", url, code))
 				})
 				if err != nil {
 					return nil, err
