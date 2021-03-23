@@ -65,9 +65,14 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, argc C.int, argv C.cchar) 
 	}()
 
 	for challenge := range challenges {
-		Prompt(pamh, C.PAM_TEXT_INFO, fmt.Sprintf("please visit %s and input %s",
-			challenge.DeviceAuth.VerificationURI,
-			challenge.DeviceAuth.UserCode))
+		if challenge.DeviceAuth.VerificationURIComplete == "" {
+			Prompt(pamh, C.PAM_TEXT_INFO, fmt.Sprintf("please visit %s and input %s",
+				challenge.DeviceAuth.VerificationURI,
+				challenge.DeviceAuth.UserCode))
+		} else {
+			Prompt(pamh, C.PAM_TEXT_INFO, fmt.Sprintf("please visit %s",
+				challenge.DeviceAuth.VerificationURIComplete))
+		}
 	}
 
 	err := <-errors

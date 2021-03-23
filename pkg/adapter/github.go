@@ -12,7 +12,6 @@ type githubAdapter struct{}
 
 func (g *githubAdapter) Endpoint() oauth2.Endpoint {
 	return oauth2.Endpoint{
-		AuthURL:       "https://github.com/login/oauth/authorize",
 		DeviceAuthURL: "https://github.com/login/device/code",
 		TokenURL:      "https://github.com/login/oauth/access_token",
 	}

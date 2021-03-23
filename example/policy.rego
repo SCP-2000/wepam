@@ -2,10 +2,8 @@ package policy
 
 default allow = false
 
-user := oauth2("github", "111109bc0316c05e23aa")
-user2 := oauth2("github", "584467084a6d0612ce0d")
+user := oauth2("github", "2d8d2c5e9878098d0657")
 
 allow {
   user.login = "NickCao"
-  user2.login = "NickCao"
 }
